@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "etl-ai-pipeline"
+version = "0.1.0"
+description = ""
+authors = ["JakubKub13 <jakubkubala3@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.115.8"
+uvicorn = "^0.34.0"
+pydantic-settings = "^2.7.1"
+
+[tool.poetry.scripts]
+start = "etl_ai_pipeline.main:start"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
