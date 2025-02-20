@@ -1,3 +1,5 @@
+import asyncio
+import logging
 from typing import Optional
 from fastapi import FastAPI, HTTPException, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,7 +8,6 @@ from fastapi.openapi.utils import get_openapi
 from pydantic import BaseModel, Field
 import uvicorn
 from datetime import datetime
-import logging
 
 from .settings import settings
 from .api.routes import health
@@ -52,12 +53,6 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
-# Pydantic models for request/response validation
-class HealthResponse(BaseModel):
-    status: str = Field(..., example="healthy")
-    timestamp: datetime = Field(default_factory=datetime.now)
-    version: str = Field(..., example=settings.APP_VERSION)
-
 # Error handlers
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
@@ -77,14 +72,25 @@ async def general_exception_handler(request, exc):
 # Include routers
 app.include_router(health.router)
 
-def start():
-    """Entry point for the application."""
-    uvicorn.run(
+async def start_app():
+    """Async entry point for the application."""
+    config = uvicorn.Config(
         "etl_ai_pipeline.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True
+        host=settings.APP_HOST,
+        port=settings.APP_PORT,
+        reload=True,
+        loop="asyncio",
+        workers=settings.WORKERS if hasattr(settings, 'WORKERS') else 4
     )
+    server = uvicorn.Server(config)
+    await server.serve()
+
+def start():
+    """Synchronous entry point for Poetry."""
+    try:
+        asyncio.run(start_app())
+    except KeyboardInterrupt:
+        logger.info("Server shutting down...")
 
 if __name__ == "__main__":
     start()
