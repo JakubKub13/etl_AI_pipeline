@@ -4,7 +4,7 @@ import logging
 import asyncio
 from dataclasses import dataclass
 from tenacity import retry, stop_after_attempt, wait_exponential
-from ..services.models import StockData, PolygonAPIError
+from ..services.models import StockDatas, PolygonAPIError
 
 import aiohttp
 from ..settings import settings
@@ -27,7 +27,7 @@ class PolygonService:
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=4, max=10)
     )
-    async def get_stock_data(self, ticker: str, date: str) -> StockData:
+    async def get_stock_data(self, ticker: str, date: str) -> StockDatas:
         """
         Fetch stock data for a specific ticker and date.
         
@@ -36,7 +36,7 @@ class PolygonService:
             date: Date in YYYY-MM-DD format
             
         Returns:
-            StockData object containing the fetched data
+            StockDatas object containing the fetched data
             
         Raises:
             PolygonAPIError: If API request fails
@@ -57,7 +57,7 @@ class PolygonService:
                     
                     data = await response.json()
                     
-                    return StockData(
+                    return StockDatas(
                         ticker=data["symbol"],
                         date=data["from"],
                         open_price=data["open"],
@@ -83,6 +83,6 @@ class PolygonService:
 
 if __name__ == "__main__":
     polygon_service = PolygonService()
-    stock_data = asyncio.run(polygon_service.get_stock_data("AAPL", "2025-02-20"))
+    stock_data = asyncio.run(polygon_service.get_stock_data("TSLA", "2025-02-20"))
     print('Stock data: ', stock_data)
 

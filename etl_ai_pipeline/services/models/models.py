@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 @dataclass
-class StockData:
+class StockDatas:
     """Data model for stock market data."""
     ticker: str
     date: str

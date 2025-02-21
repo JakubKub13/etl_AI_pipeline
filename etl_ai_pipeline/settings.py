@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     # SUPABASE SETTINGS
     SUPABASE_URL: str = os.getenv('SUPABASE_URL')
     SUPABASE_SERVICE_KEY: str = os.getenv('SUPABASE_SERVICE_KEY')
+    MAX_CONNECTIONS: int = 10
 
     # Logging Settings
     LOG_LEVEL: str = "INFO"

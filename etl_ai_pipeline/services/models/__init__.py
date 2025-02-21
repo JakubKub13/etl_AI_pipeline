@@ -1,3 +1,3 @@
-from .models import StockData, PolygonAPIError
+from .models import StockDatas, PolygonAPIError
 
-__all__ = ['StockData', 'PolygonAPIError']
+__all__ = ['StockDatas', 'PolygonAPIError']
