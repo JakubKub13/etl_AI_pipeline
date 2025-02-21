@@ -144,7 +144,7 @@ async def main():
     try:
         # Test user creation
         test_user = await db_manager.create_user(
-            email="test3@example.com",
+            email="test4@example.com",
             name="Test User3",
             metadata={"role": "test"}
         )
