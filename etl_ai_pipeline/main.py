@@ -12,7 +12,7 @@ from datetime import datetime
 from .settings import settings
 from .api.routes import health
 from .api.dependencies.auth import verify_api_key
-from .api.models.responses import ErrorResponse
+from .api.models.models import ErrorResponse
 
 # Configure logging
 logging.basicConfig(

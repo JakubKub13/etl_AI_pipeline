@@ -3,7 +3,7 @@ from datetime import datetime
 import logging
 
 from ...settings import settings
-from ..models.responses import HealthResponse
+from ..models.models import HealthResponse
 
 # Create router with tags for API documentation
 router = APIRouter(

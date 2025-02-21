@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     API_TITLE: str = "ETL AI Pipeline"
     API_DESCRIPTION: str = "ETL AI Pipeline for AI research"
 
+    # SUPABASE SETTINGS
+    SUPABASE_URL: str = os.getenv('SUPABASE_URL')
+    SUPABASE_SERVICE_KEY: str = os.getenv('SUPABASE_SERVICE_KEY')
+
     # Logging Settings
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
