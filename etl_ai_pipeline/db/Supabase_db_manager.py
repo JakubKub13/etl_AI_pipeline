@@ -125,7 +125,7 @@ class SupabaseDBManager:
     
     def close(self):
         """
-        Zatvorí všetky spojenia a vyčistí zdroje.
+        Close the database connection pool
         """
         try:
             if hasattr(self, 'pool'):

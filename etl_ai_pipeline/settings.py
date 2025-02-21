@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     # ANTHROPIC SETTINGS
     ANTHROPIC_API_KEY: str = os.getenv('ANTHROPIC_API_KEY')
 
+    # POLYGON SETTINGS
+    POLYGON_API_KEY: str = os.getenv('POLYGON_API_KEY')
+
 settings = Settings()
 
 if __name__ == '__main__':
