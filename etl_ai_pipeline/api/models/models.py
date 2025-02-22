@@ -11,3 +11,7 @@ class HealthResponse(BaseModel):
 class ErrorResponse(BaseModel):
     error: str
     detail: Optional[str] = None
+
+class StockDataRequest(BaseModel):
+    ticker: str
+    date: str

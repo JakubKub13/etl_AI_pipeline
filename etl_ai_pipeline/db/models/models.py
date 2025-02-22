@@ -16,8 +16,11 @@ class StockData:
     pre_market_price: Optional[float]
     volume: float
     status: str
+    llm_analysis: Optional[str]
+    market_sentiment: Optional[str]
+    price_movement_summary: Optional[str]
+    trading_volume_analysis: Optional[str]
     created_at: datetime
-    metadata: Optional[Dict[str, Any]] = None
 
 class DatabaseError(Exception):
     """Custom exception for database-related errors."""

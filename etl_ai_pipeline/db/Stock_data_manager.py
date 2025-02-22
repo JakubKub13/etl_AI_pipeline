@@ -126,7 +126,7 @@ if __name__ == "__main__":
     print("Stock data manager initialized")
 
     polygon_service = PolygonService()
-    stock_data = asyncio.run(polygon_service.get_stock_data("AAPL", "2025-02-20"))
+    stock_data = asyncio.run(polygon_service.get_stock_data("MSFT", "2025-02-20"))
     print('Received stock data from Polygon:', stock_data)
 
 
