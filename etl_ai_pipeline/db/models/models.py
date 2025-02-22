@@ -39,8 +39,6 @@ class StockAnalysis:
     stock_data_id: UUID
     llm_analysis: str
     market_sentiment: MarketSentiment
-    price_movement_summary: str
-    trading_volume_analysis: str
     model_version: str
     created_at: datetime
     updated_at: datetime

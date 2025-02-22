@@ -81,9 +81,7 @@ class StockDataManager:
                 "after_hours_price": stock_data.after_hours_price,
                 "pre_market_price": stock_data.pre_market_price,
                 "volume": stock_data.volume,
-                "status": stock_data.status,
-                "created_at": datetime.now(timezone.utc).isoformat(),
-                "updated_at": datetime.now(timezone.utc).isoformat()
+                "status": stock_data.status
             }
 
             # Save stock data
@@ -104,11 +102,7 @@ class StockDataManager:
                 "stock_data_id": saved_stock["id"],
                 "llm_analysis": analysis_data["llm_analysis"],
                 "market_sentiment": analysis_data["market_sentiment"],
-                "price_movement_summary": analysis_data["price_movement_summary"],
-                "trading_volume_analysis": analysis_data["trading_volume_analysis"],
-                "model_version": "claude-3-5-sonnet-20240620",  # Track model version
-                "created_at": datetime.now(timezone.utc).isoformat(),
-                "updated_at": datetime.now(timezone.utc).isoformat()
+                "model_version": "claude-3-5-sonnet-20240620"
             }
 
             # Save analysis data
@@ -146,16 +140,12 @@ class StockDataManager:
                 stock_data_id=UUID(saved_analysis["stock_data_id"]),
                 llm_analysis=saved_analysis["llm_analysis"],
                 market_sentiment=MarketSentiment(saved_analysis["market_sentiment"]),
-                price_movement_summary=saved_analysis["price_movement_summary"],
-                trading_volume_analysis=saved_analysis["trading_volume_analysis"],
                 model_version=saved_analysis["model_version"],
                 created_at=datetime.fromisoformat(saved_analysis["created_at"]),
                 updated_at=datetime.fromisoformat(saved_analysis["updated_at"])
             )
             
-            logger.info(
-                f"Successfully saved stock data and analysis for {stock_data_model.ticker}"
-            )
+            logger.info(f"Successfully saved stock data and analysis for {stock_data_model.ticker}")
             return stock_data_model, analysis_model
             
         except Exception as e:
