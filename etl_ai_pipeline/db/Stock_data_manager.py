@@ -1,13 +1,13 @@
 import asyncio
 import logging
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Tuple
 from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from uuid import UUID
 
 from ..settings import settings
 from ..services.models import StockDatas
-from .models import StockData, DatabaseError
+from .models import StockData, StockAnalysis, StockStatus, MarketSentiment, DatabaseError
 from supabase.client import Client, create_client
 from supabase.lib.client_options import ClientOptions
 from postgrest import APIResponse
@@ -21,61 +21,57 @@ class StockDataManager:
     """Manager for stock data operations in Supabase."""
 
     def __init__(self, max_connections: int = settings.MAX_CONNECTIONS):
-        """
-        Initialize the stock data manager with connection pooling.
-        
-        Args:
-            max_connections: Maximum number of concurrent database connections
-        """
-        self.supabase_url = settings.SUPABASE_URL
-        self.supabase_key = settings.SUPABASE_SERVICE_KEY
-        
-        if not self.supabase_url or not self.supabase_key:
+        """Initialize the stock data manager with connection pooling."""
+        self._init_supabase_client(max_connections)
+
+    def _init_supabase_client(self, max_connections: int) -> None:
+        """Initialize Supabase client with connection pooling."""
+        if not settings.SUPABASE_URL or not settings.SUPABASE_SERVICE_KEY:
             raise ValueError("Missing Supabase credentials in environment variables")
         
-        # Initialize connection pool
         self.pool = ThreadPoolExecutor(max_workers=max_connections)
-        
-        # Configure client options
         self.client_options = ClientOptions(
             schema="public",
-            headers={"X-Client-Info": "supabase-py/production"},
+            headers={"X-Client-Info": "etl-ai-pipeline/production"},
             postgrest_client_timeout=30
         )
         
-        # Initialize the client
         try:
             self.client: Client = create_client(
-                self.supabase_url, 
-                self.supabase_key,
+                settings.SUPABASE_URL, 
+                settings.SUPABASE_SERVICE_KEY,
                 options=self.client_options
             )
-            logger.info("Successfully initialized Supabase client for stock data")
+            logger.info("Successfully initialized Supabase client")
         except Exception as e:
             logger.error(f"Failed to initialize Supabase client: {e}")
             raise DatabaseError(f"Database initialization failed: {str(e)}")
-        
+
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=4, max=10)
     )
-    async def save_stock_data(self, stock_data: StockDatas) -> StockData:
+    async def save_stock_data_with_analysis(
+        self, 
+        stock_data: StockDatas, 
+        analysis_data: Dict[str, Any]
+    ) -> Tuple[StockData, StockAnalysis]:
         """
-        Save stock data to Supabase with retry logic.
+        Save both stock data and its analysis to Supabase.
         
         Args:
-            stock_data: Dictionary containing stock data
+            stock_data: Raw stock market data
+            analysis_data: AI-enhanced analysis data
             
         Returns:
-            StockData object
+            Tuple of saved StockData and StockAnalysis objects
             
         Raises:
             DatabaseError: If data insertion fails
         """
         try:
-            print("Incoming stock data:", stock_data)
-
-            data = {
+            # Prepare stock data
+            stock_data_dict = {
                 "ticker": stock_data.ticker,
                 "date": stock_data.date,
                 "open_price": stock_data.open_price,
@@ -86,41 +82,122 @@ class StockDataManager:
                 "pre_market_price": stock_data.pre_market_price,
                 "volume": stock_data.volume,
                 "status": stock_data.status,
-                "created_at": datetime.now(timezone.utc).isoformat()
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat()
             }
 
-            print("Prepared data for Supabase:", data) 
-                
+            # Save stock data
+            stock_result = await asyncio.get_event_loop().run_in_executor(
+                self.pool,
+                lambda: self.client.table("stock_data")
+                    .insert(stock_data_dict)
+                    .execute()
+            )
+            
+            if not stock_result.data:
+                raise DatabaseError("No data returned from stock data insertion")
+            
+            saved_stock = stock_result.data[0]
+            
+            # Prepare analysis data
+            analysis_dict = {
+                "stock_data_id": saved_stock["id"],
+                "llm_analysis": analysis_data["llm_analysis"],
+                "market_sentiment": analysis_data["market_sentiment"],
+                "price_movement_summary": analysis_data["price_movement_summary"],
+                "trading_volume_analysis": analysis_data["trading_volume_analysis"],
+                "model_version": "claude-3-5-sonnet-20240620",  # Track model version
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+
+            # Save analysis data
+            analysis_result = await asyncio.get_event_loop().run_in_executor(
+                self.pool,
+                lambda: self.client.table("stock_analysis")
+                    .insert(analysis_dict)
+                    .execute()
+            )
+            
+            if not analysis_result.data:
+                raise DatabaseError("No data returned from analysis insertion")
+            
+            saved_analysis = analysis_result.data[0]
+            
+            # Convert to domain models
+            stock_data_model = StockData(
+                id=UUID(saved_stock["id"]),
+                ticker=saved_stock["ticker"],
+                date=datetime.fromisoformat(saved_stock["date"]),
+                open_price=saved_stock["open_price"],
+                high_price=saved_stock["high_price"],
+                low_price=saved_stock["low_price"],
+                close_price=saved_stock["close_price"],
+                after_hours_price=saved_stock.get("after_hours_price"),
+                pre_market_price=saved_stock.get("pre_market_price"),
+                volume=saved_stock["volume"],
+                status=StockStatus(saved_stock["status"]),
+                created_at=datetime.fromisoformat(saved_stock["created_at"]),
+                updated_at=datetime.fromisoformat(saved_stock["updated_at"])
+            )
+            
+            analysis_model = StockAnalysis(
+                id=UUID(saved_analysis["id"]),
+                stock_data_id=UUID(saved_analysis["stock_data_id"]),
+                llm_analysis=saved_analysis["llm_analysis"],
+                market_sentiment=MarketSentiment(saved_analysis["market_sentiment"]),
+                price_movement_summary=saved_analysis["price_movement_summary"],
+                trading_volume_analysis=saved_analysis["trading_volume_analysis"],
+                model_version=saved_analysis["model_version"],
+                created_at=datetime.fromisoformat(saved_analysis["created_at"]),
+                updated_at=datetime.fromisoformat(saved_analysis["updated_at"])
+            )
+            
+            logger.info(
+                f"Successfully saved stock data and analysis for {stock_data_model.ticker}"
+            )
+            return stock_data_model, analysis_model
+            
+        except Exception as e:
+            logger.error(f"Failed to save stock data with analysis: {e}")
+            raise DatabaseError(f"Data insertion failed: {str(e)}")
+
+    async def get_stock_data(self, ticker: str, date: str) -> Optional[StockData]:
+        """Retrieve stock data by ticker and date."""
+        try:
             result = await asyncio.get_event_loop().run_in_executor(
                 self.pool,
-                lambda: self.client.table("stock_data").insert(data).execute()
+                lambda: self.client.table("stock_data")
+                    .select("*")
+                    .eq("ticker", ticker)
+                    .eq("date", date)
+                    .limit(1)
+                    .execute()
             )
             
             if not result.data:
-                raise DatabaseError("No data returned from stock data insertion")
+                return None
                 
-            saved_data = result.data[0]
-            logger.info(f"Successfully saved stock data for {saved_data['ticker']}")
-            
+            data = result.data[0]
             return StockData(
-                id=saved_data["id"],
-                ticker=saved_data["ticker"],
-                date=datetime.fromisoformat(saved_data["date"]),
-                open_price=saved_data["open_price"],
-                high_price=saved_data["high_price"],
-                low_price=saved_data["low_price"],
-                close_price=saved_data["close_price"],
-                after_hours_price=saved_data.get("after_hours_price"),
-                pre_market_price=saved_data.get("pre_market_price"),
-                volume=saved_data["volume"],
-                status=saved_data["status"],
-                created_at=datetime.fromisoformat(saved_data["created_at"])
+                id=UUID(data["id"]),
+                ticker=data["ticker"],
+                date=datetime.fromisoformat(data["date"]),
+                open_price=data["open_price"],
+                high_price=data["high_price"],
+                low_price=data["low_price"],
+                close_price=data["close_price"],
+                after_hours_price=data.get("after_hours_price"),
+                pre_market_price=data.get("pre_market_price"),
+                volume=data["volume"],
+                status=StockStatus(data["status"]),
+                created_at=datetime.fromisoformat(data["created_at"]),
+                updated_at=datetime.fromisoformat(data["updated_at"])
             )
-            
         except Exception as e:
-            logger.error(f"Failed to save stock data: {e}")
-            raise DatabaseError(f"Stock data insertion failed: {str(e)}")
-        
+            logger.error(f"Failed to retrieve stock data: {e}")
+            raise DatabaseError(f"Data retrieval failed: {str(e)}")
+
 if __name__ == "__main__":
     stock_data_manager = StockDataManager()
     print("Stock data manager initialized")
@@ -129,9 +206,16 @@ if __name__ == "__main__":
     stock_data = asyncio.run(polygon_service.get_stock_data("MSFT", "2025-02-20"))
     print('Received stock data from Polygon:', stock_data)
 
+    analysis_data = {
+        "llm_analysis": "This is a sample analysis",
+        "market_sentiment": "Positive",
+        "price_movement_summary": "Stock price increased",
+        "trading_volume_analysis": "High trading volume"
+    }
 
-    saved_stock_data = asyncio.run(stock_data_manager.save_stock_data(stock_data))
+    saved_stock_data, saved_analysis = asyncio.run(stock_data_manager.save_stock_data_with_analysis(stock_data, analysis_data))
     print('Saved stock data: ', saved_stock_data)
+    print('Saved analysis: ', saved_analysis)
 
 
 

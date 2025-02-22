@@ -9,6 +9,7 @@ from ...services.polygon_service import PolygonService
 from ...db.Stock_data_manager import StockDataManager
 from ...services.models import StockDatas
 from ...agent.models import StockDataState
+from ...db.models import StockStatus, MarketSentiment
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ class DataRetrievalGraph:
                 state["ticker"], 
                 state["date"]
             )
+            logger.info(f"Raw data fetched for {state['ticker']}")
             print("Raw data fetched:", data)
             return {"raw_data": data}
         except Exception as e:
@@ -53,7 +55,7 @@ class DataRetrievalGraph:
             - Pre-market: ${raw_data.pre_market_price if raw_data.pre_market_price else 'N/A'}
 
             Provide:
-            1. Overall market sentiment
+            1. Overall market sentiment (explicitly state if bullish, bearish, or neutral)
             2. Detailed price movement analysis
             3. Trading volume analysis and its significance
             4. Comprehensive summary of the day's trading activity
@@ -64,45 +66,91 @@ class DataRetrievalGraph:
             analysis = response.content
             print("Analysis:", analysis)
             
-            # Parse the analysis into structured data
+            # Extract sentiment with proper validation
+            sentiment = self._extract_sentiment(analysis)
+            if not isinstance(sentiment, MarketSentiment):
+                sentiment = MarketSentiment.NEUTRAL
+                logger.warning(f"Invalid sentiment detected, defaulting to {sentiment}")
+
             enhanced_data = {
                 "llm_analysis": analysis,
-                "market_sentiment": self._extract_sentiment(analysis),
+                "market_sentiment": sentiment.value,
                 "price_movement_summary": self._extract_price_analysis(analysis),
                 "trading_volume_analysis": self._extract_volume_analysis(analysis)
             }
             
+            logger.info(f"Enhanced data generated for {raw_data.ticker}")
             return {"enhanced_data": enhanced_data}
         except Exception as e:
             logger.error(f"Error in LLM enhancement: {e}")
             raise
 
     async def save_to_database(self, state: StockDataState) -> dict:
-        """Save enhanced data to database."""
+        """Save both raw and enhanced data to database."""
         try:
             raw_data = state["raw_data"]
             enhanced_data = state["enhanced_data"]
             
-            # Combine raw and enhanced data
-            final_data = StockDatas(
-                ticker=raw_data.ticker,
-                date=raw_data.date,
-                open_price=raw_data.open_price,
-                high_price=raw_data.high_price,
-                low_price=raw_data.low_price,
-                close_price=raw_data.close_price,
-                after_hours_price=raw_data.after_hours_price,
-                pre_market_price=raw_data.pre_market_price,
-                volume=raw_data.volume,
-                status=raw_data.status,
-                **enhanced_data
+            # Save both stock data and analysis
+            stock_data, analysis = await self.stock_data_manager.save_stock_data_with_analysis(
+                stock_data=raw_data,
+                analysis_data=enhanced_data
             )
             
-            saved_data = await self.stock_data_manager.save_stock_data(final_data)
-            return {"final_data": saved_data}
+            logger.info(f"Data saved successfully for {raw_data.ticker}")
+            return {
+                "final_data": {
+                    "stock_data": stock_data,
+                    "analysis": analysis
+                }
+            }
         except Exception as e:
             logger.error(f"Error saving to database: {e}")
             raise
+
+    @staticmethod
+    def _extract_sentiment(analysis: str) -> MarketSentiment:
+        """Extract and validate market sentiment from analysis."""
+        analysis_lower = analysis.lower()
+        if "bullish" in analysis_lower:
+            return MarketSentiment.BULLISH
+        elif "bearish" in analysis_lower:
+            return MarketSentiment.BEARISH
+        return MarketSentiment.NEUTRAL
+
+    @staticmethod
+    def _extract_price_analysis(analysis: str) -> str:
+        """Extract price movement analysis with validation."""
+        try:
+            sections = analysis.split("\n\n")
+            for section in sections:
+                if "price movement" in section.lower():
+                    return section.strip()
+            # Fallback to numbered section
+            for section in sections:
+                if section.strip().startswith("2."):
+                    return section.strip()
+            return "Price analysis not available"
+        except Exception as e:
+            logger.error(f"Error extracting price analysis: {e}")
+            return "Error in price analysis extraction"
+
+    @staticmethod
+    def _extract_volume_analysis(analysis: str) -> str:
+        """Extract volume analysis with validation."""
+        try:
+            sections = analysis.split("\n\n")
+            for section in sections:
+                if "volume" in section.lower():
+                    return section.strip()
+            # Fallback to numbered section
+            for section in sections:
+                if section.strip().startswith("3."):
+                    return section.strip()
+            return "Volume analysis not available"
+        except Exception as e:
+            logger.error(f"Error extracting volume analysis: {e}")
+            return "Error in volume analysis extraction"
 
     def _create_workflow(self) -> StateGraph:
         """Create the workflow graph."""
@@ -120,50 +168,6 @@ class DataRetrievalGraph:
         workflow.add_edge("save_to_database", END)
         
         return workflow.compile()
-    
-    @staticmethod
-    def _extract_sentiment(analysis: str) -> str:
-        """Extract sentiment from LLM analysis."""
-        analysis_lower = analysis.lower()
-        if "bullish" in analysis_lower:
-            return "bullish"
-        elif "bearish" in analysis_lower:
-            return "bearish"
-        return "neutral"
-
-    @staticmethod
-    def _extract_price_analysis(analysis: str) -> str:
-        """Extract price movement analysis."""
-        try:
-            # Look for the section starting with "2. Detailed price movement analysis:"
-            sections = analysis.split("\n\n")
-            for section in sections:
-                if "price movement analysis" in section.lower():
-                    return section.strip()
-            # If not found, return the first paragraph after "2."
-            for section in sections:
-                if section.strip().startswith("2."):
-                    return section.strip()
-            return "Price analysis not found"
-        except Exception:
-            return "Error extracting price analysis"
-
-    @staticmethod
-    def _extract_volume_analysis(analysis: str) -> str:
-        """Extract volume analysis."""
-        try:
-            # Look for the section starting with "3. Trading volume analysis"
-            sections = analysis.split("\n\n")
-            for section in sections:
-                if "volume analysis" in section.lower():
-                    return section.strip()
-            # If not found, return the first paragraph after "3."
-            for section in sections:
-                if section.strip().startswith("3."):
-                    return section.strip()
-            return "Volume analysis not found"
-        except Exception:
-            return "Error extracting volume analysis"
 
     async def process_stock_data(self, ticker: str, date: str) -> dict:
         """Process stock data through the workflow."""
@@ -177,6 +181,7 @@ class DataRetrievalGraph:
             }
             
             result = await self.workflow.ainvoke(initial_state)
+            logger.info(f"Successfully processed data for {ticker}")
             return result["final_data"]
         except Exception as e:
             logger.error(f"Error processing stock data: {e}")
