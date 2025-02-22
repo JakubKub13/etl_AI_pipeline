@@ -187,6 +187,25 @@ class StockDataManager:
         except Exception as e:
             logger.error(f"Failed to retrieve stock data: {e}")
             raise DatabaseError(f"Data retrieval failed: {str(e)}")
+        
+    async def execute_query(self, query_name: str, params: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+        """Execute a stored procedure."""
+        try:
+            result = await asyncio.get_event_loop().run_in_executor(
+                self.pool,
+                lambda: self.client.rpc(
+                    query_name,
+                    params or {}
+                ).execute()
+            )
+            
+            if not result.data:
+                return []
+            
+            return result.data
+        except Exception as e:
+            logger.error(f"Failed to execute query {query_name}: {e}")
+            raise DatabaseError(f"Query execution failed: {str(e)}")
 
 if __name__ == "__main__":
     stock_data_manager = StockDataManager()
@@ -206,6 +225,8 @@ if __name__ == "__main__":
     saved_stock_data, saved_analysis = asyncio.run(stock_data_manager.save_stock_data_with_analysis(stock_data, analysis_data))
     print('Saved stock data: ', saved_stock_data)
     print('Saved analysis: ', saved_analysis)
+
+
 
 
 

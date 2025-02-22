@@ -10,7 +10,7 @@ import uvicorn
 from datetime import datetime
 
 from .settings import settings
-from .api.routes import health, stock_data
+from .api.routes import health, stock_data, analysis
 from .api.dependencies.auth import verify_api_key
 from .api.models.models import ErrorResponse
 
@@ -72,6 +72,7 @@ async def general_exception_handler(request, exc):
 # Include routers
 app.include_router(health.router)
 app.include_router(stock_data.router)
+app.include_router(analysis.router)
 
 async def start_app():
     """Async entry point for the application."""
