@@ -49,7 +49,7 @@ class StockAnalysisAgent:
         try:
             system_prompt = """You are a professional stock market analyst. 
             Analyze the provided market data and create a detailed, professional report.
-            Focus on key trends, volatility patterns, and actionable insights."""
+            Format your response in clean HTML with proper styling."""
             
             analysis_prompt = f"""
             Analyze the following stock data for {state['ticker']}:
@@ -60,11 +60,37 @@ class StockAnalysisAgent:
             Volatility Data:
             {state['volatility_data']}
             
-            Create a professional analysis report including:
-            1. Market Overview
-            2. Technical Analysis
-            3. Risk Assessment
-            4. Trading Recommendations
+            Create a professional analysis report using this HTML template:
+            
+            <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+                <h1 style="color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+                    Stock Analysis Report: {state['ticker']}
+                </h1>
+                
+                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <h2 style="color: #444; margin-top: 0;">1. Market Overview</h2>
+                    [Insert your market overview here]
+                </div>
+                
+                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <h2 style="color: #444; margin-top: 0;">2. Technical Analysis</h2>
+                    [Insert your technical analysis here]
+                </div>
+                
+                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <h2 style="color: #444; margin-top: 0;">3. Risk Assessment</h2>
+                    [Insert your risk assessment here]
+                </div>
+                
+                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <h2 style="color: #444; margin-top: 0;">4. Trading Recommendations</h2>
+                    [Insert your trading recommendations here]
+                </div>
+                
+                <div style="font-size: 12px; color: #666; margin-top: 30px; padding-top: 10px; border-top: 1px solid #eee;">
+                    Report generated on {state['date']}
+                </div>
+            </div>
             """
 
             messages = [
@@ -73,7 +99,6 @@ class StockAnalysisAgent:
             ]
 
             response = await self.llm.ainvoke(messages)
-            print('ANALYSIS REPORT: ', response.content)
             return {"analysis_report": response.content}
         except Exception as e:
             logger.error(f"Error generating analysis report: {e}")
@@ -158,7 +183,7 @@ if __name__ == "__main__":
             subject="Stock Analysis Report"
         )
         state = StockAnalysisState(
-            ticker="TSLA",
+            ticker="AAPL",
             date=datetime.now().strftime("%Y-%m-%d"),
             trends_data=None,
             volatility_data=None,
