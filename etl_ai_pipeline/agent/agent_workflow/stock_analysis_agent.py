@@ -162,7 +162,8 @@ class StockAnalysisAgent:
                 trends_data=None,
                 volatility_data=None,
                 analysis_report=None,
-                email_sent=False
+                email_sent=False,
+                email_config=email_config
             )
             
             result = await self.workflow.ainvoke(initial_state)

@@ -1,6 +1,7 @@
 from datetime import datetime
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, Field, EmailStr
+from typing import Optional, List
+
 
 from ...settings import settings
 class HealthResponse(BaseModel):
@@ -15,3 +16,12 @@ class ErrorResponse(BaseModel):
 class StockDataRequest(BaseModel):
     ticker: str
     date: str
+
+class AnalysisEmailConfig(BaseModel):
+    recipient_email: EmailStr
+    subject: Optional[str] = None
+    cc: Optional[List[EmailStr]] = None
+
+class StockAnalysisRequest(BaseModel):
+    ticker: str
+    email_config: AnalysisEmailConfig

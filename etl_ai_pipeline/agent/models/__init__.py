@@ -1,3 +1,3 @@
-from .models import StockDataState
+from .models import StockDataState, EmailConfig, StockAnalysisState
 
-__all__ = ['StockDataState']
+__all__ = ['StockDataState', 'EmailConfig', 'StockAnalysisState']
