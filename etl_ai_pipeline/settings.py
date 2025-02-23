@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     SMTP_USERNAME: str = os.getenv('SMTP_USERNAME')
     SMTP_PASSWORD: str = os.getenv('SMTP_PASSWORD')
     SENDER_EMAIL: str = os.getenv('SENDER_EMAIL')
+    RECIPIENT_EMAIL: str = os.getenv('RECIPIENT_EMAIL')
 
 settings = Settings()
 

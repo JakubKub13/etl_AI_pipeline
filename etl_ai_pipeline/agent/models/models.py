@@ -10,6 +10,12 @@ class StockDataState(TypedDict):
     enhanced_data: Optional[dict]
     final_data: Optional[dict]
 
+class EmailConfig(BaseModel):
+    """Configuration for email sending."""
+    recipient_email: EmailStr
+    subject: Optional[str] = None
+    cc: Optional[List[EmailStr]] = None
+
 class StockAnalysisState(TypedDict):
     """State for stock analysis workflow."""
     ticker: str
@@ -18,9 +24,4 @@ class StockAnalysisState(TypedDict):
     volatility_data: Optional[List[Dict]]
     analysis_report: Optional[str]
     email_sent: bool
-
-class EmailConfig(BaseModel):
-    """Configuration for email sending."""
-    recipient_email: EmailStr
-    subject: Optional[str] = None
-    cc: Optional[List[EmailStr]] = None
+    email_config: EmailConfig
