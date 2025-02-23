@@ -40,6 +40,13 @@ class Settings(BaseSettings):
     # POLYGON SETTINGS
     POLYGON_API_KEY: str = os.getenv('POLYGON_API_KEY')
 
+    # EMAIL SETTINGS
+    SMTP_SERVER: str = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
+    SMTP_PORT: int = int(os.getenv('SMTP_PORT', '587'))
+    SMTP_USERNAME: str = os.getenv('SMTP_USERNAME')
+    SMTP_PASSWORD: str = os.getenv('SMTP_PASSWORD')
+    SENDER_EMAIL: str = os.getenv('SENDER_EMAIL')
+
 settings = Settings()
 
 if __name__ == '__main__':

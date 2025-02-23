@@ -17,6 +17,8 @@ supabase = "^2.13.0"
 tenacity = "^9.0.0"
 langgraph = "^0.2.74"
 langchain-anthropic = "^0.3.7"
+pydantic = "^2.10.6"
+email-validator = "^2.2.0"
 
 [tool.poetry.scripts]
 start = "etl_ai_pipeline.main:start"
