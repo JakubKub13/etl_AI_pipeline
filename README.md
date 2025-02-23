@@ -4,7 +4,7 @@
 A sophisticated ETL pipeline that processes stock market data using AI/LLM for enhanced analysis and automated reporting. The application uses LangGraph for workflow management and Claude 3.5 Sonnet for market analysis.
 
 ✨ Features
-- Real-time stock data processing with Polygon API
+- Stock data processing with Polygon API
 - AI-powered market analysis using Claude 3.5 Sonnet 
 - Automated HTML report generation
 - Email notifications with analysis reports
