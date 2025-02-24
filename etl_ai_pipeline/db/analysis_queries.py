@@ -11,12 +11,12 @@ class StockAnalyzer:
 
     async def calculate_short_term_volatility(self, ticker: str) -> Dict:
         """
-        Vypočíta volatilitu za posledné 3 dni pre daný ticker.
+        Calculates volatility for the last 3 days for a given ticker.
         
-        Metriky:
-        1. Denná volatilita = ((High - Low) / Open) * 100
-        2. Priemerná 3-dňová volatilita
-        3. Cenový rozsah (High - Low)
+        Metrics:
+        1. Daily volatility = ((High - Low) / Open) * 100
+        2. Average 3-day volatility
+        3. Price range (High - Low)
         """
         return await self.manager.execute_query(
             'execute_stock_analysis',
@@ -28,10 +28,10 @@ class StockAnalyzer:
 
     async def identify_short_term_trends(self, ticker: str) -> Dict:
         """
-        Identifikuje krátkodobé trendy na základe 3-dňových dát.
+        Identifies short-term trends based on 3-day data.
         
-        Analýza:
-        1. Intraday trend (na základe Open vs Close)
+        Analysis:
+        1. Intraday trend (based on Open vs Close)
         2. Price momentum
         3. Volume trend
         """

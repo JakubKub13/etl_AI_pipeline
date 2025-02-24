@@ -15,9 +15,9 @@ router = APIRouter(prefix="/analysis", tags=["Analysis"])
 @router.get("/volatility/{ticker}")
 async def get_short_term_volatility(ticker: str):
     """
-    Získa 3-dňovú volatilitu pre daný ticker.
+    Get short term volatility for a given ticker.
     
-    - **ticker**: Symbol akcie (napr. MSFT, AAPL)
+    - **ticker**:(ex. MSFT, AAPL)
     """
     try:
         analyzer = StockAnalyzer(StockDataManager())
@@ -29,9 +29,9 @@ async def get_short_term_volatility(ticker: str):
 @router.get("/trends/{ticker}")
 async def get_short_term_trends(ticker: str):
     """
-    Získa krátkodobú analýzu trendov pre daný ticker.
+    Get short term trends for a given ticker.
     
-    - **ticker**: Symbol akcie (napr. MSFT, AAPL)
+    - **ticker**:(ex. MSFT, AAPL)
     """
     try:
         analyzer = StockAnalyzer(StockDataManager())

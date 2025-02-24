@@ -66,7 +66,6 @@ class DataRetrievalGraph:
             analysis = response.content
             print("Analysis:", analysis)
             
-            # Extract sentiment with proper validation
             sentiment = self._extract_sentiment(analysis)
             if not isinstance(sentiment, MarketSentiment):
                 sentiment = MarketSentiment.NEUTRAL
@@ -126,7 +125,6 @@ class DataRetrievalGraph:
             for section in sections:
                 if "price movement" in section.lower():
                     return section.strip()
-            # Fallback to numbered section
             for section in sections:
                 if section.strip().startswith("2."):
                     return section.strip()
@@ -143,7 +141,6 @@ class DataRetrievalGraph:
             for section in sections:
                 if "volume" in section.lower():
                     return section.strip()
-            # Fallback to numbered section
             for section in sections:
                 if section.strip().startswith("3."):
                     return section.strip()

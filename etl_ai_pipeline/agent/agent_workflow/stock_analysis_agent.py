@@ -172,8 +172,6 @@ class StockAnalysisAgent:
             logger.error(f"Error running analysis workflow: {e}")
             raise
 
-
-
 if __name__ == "__main__":
     import asyncio
     

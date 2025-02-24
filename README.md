@@ -24,7 +24,7 @@ git clone https://github.com/yourusername/etl-ai-pipeline.git
 cd etl-ai-pipeline
 
 # DB setup
-The application uses Supabase. Create the following tables:
+The application uses Supabase. Create the following tables :
 -- stock_data table
 CREATE TABLE stock_data (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
