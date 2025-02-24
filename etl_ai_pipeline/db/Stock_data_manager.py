@@ -4,6 +4,7 @@ from typing import Optional, Dict, Any, List, Tuple
 from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor
 from uuid import UUID
+from contextlib import asynccontextmanager
 
 from ..settings import settings
 from ..services.models import StockDatas
@@ -23,6 +24,34 @@ class StockDataManager:
     def __init__(self, max_connections: int = settings.MAX_CONNECTIONS):
         """Initialize the stock data manager with connection pooling."""
         self._init_supabase_client(max_connections)
+
+    def __enter__(self):
+        """Context manager entry."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit with proper cleanup."""
+        self.cleanup()
+
+    async def __aenter__(self):
+        """Async context manager entry."""
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit with proper cleanup."""
+        await self.cleanup()
+
+    def cleanup(self):
+        """Cleanup resources."""
+        if hasattr(self, 'pool'):
+            self.pool.shutdown(wait=True)
+            logger.info("ThreadPoolExecutor shut down successfully")
+
+    async def async_cleanup(self):
+        """Async cleanup resources."""
+        if hasattr(self, 'pool'):
+            self.pool.shutdown(wait=True)
+            logger.info("ThreadPoolExecutor shut down successfully")
 
     def _init_supabase_client(self, max_connections: int) -> None:
         """Initialize Supabase client with connection pooling."""
@@ -206,6 +235,15 @@ class StockDataManager:
         except Exception as e:
             logger.error(f"Failed to execute query {query_name}: {e}")
             raise DatabaseError(f"Query execution failed: {str(e)}")
+
+@asynccontextmanager
+async def get_stock_manager():
+    """Async context manager for StockDataManager."""
+    manager = StockDataManager()
+    try:
+        yield manager
+    finally:
+        await manager.async_cleanup()
 
 if __name__ == "__main__":
     stock_data_manager = StockDataManager()

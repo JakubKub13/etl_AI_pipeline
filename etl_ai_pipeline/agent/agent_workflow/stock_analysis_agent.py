@@ -14,15 +14,33 @@ logger = logging.getLogger(__name__)
 
 class StockAnalysisAgent:
 
-    def __init__(self):
-        """Initialize the stock analysis agent."""
-        self.stock_analyzer = StockAnalyzer(StockDataManager())
+    def __init__(self, stock_manager: StockDataManager = None):
+        """
+        Initialize the stock analysis agent.
+        
+        Args:
+            stock_manager: Optional StockDataManager instance. If not provided, creates new one.
+        """
+        self.stock_analyzer = StockAnalyzer(stock_manager or StockDataManager())
         self.llm = ChatAnthropic(
             model="claude-3-5-sonnet-20240620",
             temperature=0.5,
         )
         self.workflow = self._create_workflow()
         self.email_service = EmailService()
+
+    async def __aenter__(self):
+        """Async context manager entry."""
+        return self
+
+    async def __aexit__(self):
+        """Async context manager exit with cleanup."""
+        try:
+            if hasattr(self, 'email_service'):
+                pass
+        except Exception as e:
+            logger.error(f"Error during StockAnalysisAgent cleanup: {e}")
+            raise
 
     async def fetch_trends_data(self, state: StockAnalysisState) -> Dict:
         """Fetch trends data for the specified ticker."""

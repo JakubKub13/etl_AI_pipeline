@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from contextlib import asynccontextmanager
 from typing import Optional
 from fastapi import FastAPI, HTTPException, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +14,13 @@ from .settings import settings
 from .api.routes import health, stock_data, analysis
 from .api.dependencies.auth import verify_api_key
 from .api.models.models import ErrorResponse
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifecycle manager for the FastAPI application."""
+    yield
+    if hasattr(app.state, "stock_manager"):
+        await app.state.stock_manager.async_cleanup()
 
 # Configure logging
 logging.basicConfig(
