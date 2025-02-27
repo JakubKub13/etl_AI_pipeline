@@ -4,6 +4,7 @@ from datetime import datetime
 from langgraph.graph import StateGraph, START, END
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_anthropic import ChatAnthropic
+from langsmith import traceable
 from ...db.analysis_queries import StockAnalyzer
 from ...db.Stock_data_manager import StockDataManager
 from ...agent.models.models import StockAnalysisState, EmailConfig
@@ -33,15 +34,17 @@ class StockAnalysisAgent:
         """Async context manager entry."""
         return self
 
-    async def __aexit__(self):
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit with cleanup."""
         try:
             if hasattr(self, 'email_service'):
                 pass
+            logger.info("StockAnalysisAgent cleanup completed")
         except Exception as e:
             logger.error(f"Error during StockAnalysisAgent cleanup: {e}")
             raise
 
+    @traceable
     async def fetch_trends_data(self, state: StockAnalysisState) -> Dict:
         """Fetch trends data for the specified ticker."""
         try:
@@ -52,6 +55,7 @@ class StockAnalysisAgent:
             logger.error(f"Error fetching trends data: {e}")
             raise
 
+    @traceable
     async def fetch_volatility_data(self, state: StockAnalysisState) -> Dict:
         """Fetch volatility data for the specified ticker."""
         try:
@@ -62,6 +66,7 @@ class StockAnalysisAgent:
             logger.error(f"Error fetching volatility data: {e}")
             raise
 
+    @traceable
     async def generate_analysis_report(self, state: StockAnalysisState) -> Dict:
         """Generate analysis report using LLM."""
         try:
@@ -122,6 +127,7 @@ class StockAnalysisAgent:
             logger.error(f"Error generating analysis report: {e}")
             raise
 
+    @traceable
     async def send_email_report(self, state: StockAnalysisState) -> Dict:
         """Send analysis report via email."""
         try:

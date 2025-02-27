@@ -48,6 +48,11 @@ class Settings(BaseSettings):
     SENDER_EMAIL: str = os.getenv('SENDER_EMAIL')
     RECIPIENT_EMAIL: str = os.getenv('RECIPIENT_EMAIL')
 
+    # LANGCHAIN SETTINGS
+    LANGCHAIN_API_KEY: str = os.getenv('LANGCHAIN_API_KEY')
+    LANGCHAIN_TRACING_V2: bool = os.getenv('LANGCHAIN_TRACING_V2', 'true') == 'true'
+    LANGCHAIN_PROJECT: str = os.getenv('LANGCHAIN_PROJECT')
+
 settings = Settings()
 
 if __name__ == '__main__':
